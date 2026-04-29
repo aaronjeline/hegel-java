@@ -27,7 +27,7 @@ Then add the dependency to your project's `pom.xml`:
 
 ```xml
 <dependency>
-  <groupId>io.hegel</groupId>
+  <groupId>com.aaroneline</groupId>
   <artifactId>hegel-java</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <scope>test</scope>
@@ -60,9 +60,9 @@ for the purposes of this guide. Create a new test under your project's
 `src/test/java` directory:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -92,9 +92,9 @@ test draws an integer and checks that it is equal to itself.
 Next, try a test that fails:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -116,9 +116,9 @@ To fix this test, constrain the integers you generate with `minValue` and
 `maxValue`:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -146,9 +146,9 @@ generators, such as `lists`, `sets`, `maps`, `tuples`, `oneOf`, and `optional`.
 For example, you can use `lists` to generate a list of integers:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -178,10 +178,10 @@ of `Generator<T>`. For example, say you have a `Person` class that you want to
 generate:
 
 ```java
-import io.hegel.Generator;
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generator;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -207,8 +207,8 @@ You can feed the results of one `draw` call into later generation decisions. For
 example, say you extend `Person` to include a `drivingLicense` boolean field:
 
 ```java
-import io.hegel.Generator;
-import io.hegel.Generators;
+import com.aaroneline.Generator;
+import com.aaroneline.Generators;
 
 class PersonGenerators {
 
@@ -231,9 +231,9 @@ class PersonGenerators {
 Use the `note` method to attach debug information:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -262,9 +262,9 @@ By default, Hegel runs 100 test cases. To override this, pass `testCases` to the
 `@HegelTest` annotation:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -294,9 +294,9 @@ Use `assume` when only some generated inputs are valid for the property you want
 to test:
 
 ```java
-import io.hegel.Generators;
-import io.hegel.HegelTest;
-import io.hegel.TestCase;
+import com.aaroneline.Generators;
+import com.aaroneline.HegelTest;
+import com.aaroneline.TestCase;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

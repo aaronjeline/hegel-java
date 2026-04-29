@@ -5,7 +5,7 @@
            https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>io.github.aaronjeline</groupId>
+  <groupId>com.aaroneline</groupId>
   <artifactId>hegel-java</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>jar</packaging>
