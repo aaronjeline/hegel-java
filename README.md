@@ -1,4 +1,10 @@
-# Getting Started
+# Hegel-Java
+
+An implementation of [Hegel](https://hegel.dev) in Java.
+
+Currently extremely rough, don't depend on it.
+
+## Getting Started
 
 Hegel is a property-based testing library for Java. Hegel is based on
 [Hypothesis](https://github.com/HypothesisWorks/hypothesis), using the
@@ -7,7 +13,7 @@ Hegel is a property-based testing library for Java. Hegel is based on
 This guide walks you through the basics of installing Hegel and writing your
 first tests.
 
-## Install Hegel
+### Install Hegel
 
 Add `hegel-java` to your project as a test dependency.
 
@@ -47,7 +53,7 @@ The Java client starts a Hegel server automatically. It first looks for a
 the server with `uvx`. You can override the command with the
 `HEGEL_SERVER_COMMAND` environment variable.
 
-## Write Your First Test
+### Write Your First Test
 
 You're now ready to write your first test. We'll use JUnit as the test runner
 for the purposes of this guide. Create a new test under your project's
@@ -130,7 +136,7 @@ class IntegerPropertiesTest {
 
 Run the test again. It should now pass.
 
-## Use Generators
+### Use Generators
 
 Hegel provides a library of generators that you can use out of the box. There
 are primitive generators, such as `integers`, `longs`, `doubles`, `booleans`,
@@ -220,7 +226,7 @@ class PersonGenerators {
 }
 ```
 
-## Debug Failing Test Cases
+### Debug Failing Test Cases
 
 Use the `note` method to attach debug information:
 
@@ -250,7 +256,7 @@ Notes only appear when Hegel replays the minimal failing example.
 During the final replay, Hegel also prints drawn values, which can help explain
 the exact counterexample that caused the property to fail.
 
-## Change the Number of Test Cases
+### Change the Number of Test Cases
 
 By default, Hegel runs 100 test cases. To override this, pass `testCases` to the
 `@HegelTest` annotation:
@@ -282,7 +288,7 @@ void reproducibleProperty(TestCase tc) {
 }
 ```
 
-## Filter Test Cases
+### Filter Test Cases
 
 Use `assume` when only some generated inputs are valid for the property you want
 to test:
