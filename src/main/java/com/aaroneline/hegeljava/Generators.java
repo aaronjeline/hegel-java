@@ -91,20 +91,20 @@ public final class Generators {
         return new MapGenerator<>(keys, values);
     }
 
-    /**
-     * Generates a fixed-length heterogeneous list (tuple).
-     * Returned as {@code List<Object>}; callers must cast elements.
-     */
-    public static TupleGenerator tuples(Generator<?>... elements) {
-        return new TupleGenerator(Arrays.asList(elements));
+    public static <A,B> TupleGenerators.TupleGenerator<A,B> tuple(Generator<A> a, Generator<B> b) {
+        return new TupleGenerators.TupleGenerator<>(a,b);
     }
 
-    public static <X,Y> TupleGenerator.TupleGen<X,Y> tuple(Generator<X> a, Generator<Y> b) {
-        return new TupleGenerator.TupleGen<>(a,b);
+    public static <A,B,C> TupleGenerators.Tuple3Generator<A,B,C> tuple(Generator<A> a, Generator<B> b, Generator<C> c) {
+        return new TupleGenerators.Tuple3Generator<>(a,b,c);
     }
 
-    public static <X,Y,Z> TupleGenerator.Tuple3Gen<X,Y,Z> tuple(Generator<X> a, Generator<Y> b, Generator<Z> c) {
-        return new TupleGenerator.Tuple3Gen<>(a,b,c);
+    public static <A,B,C,D> TupleGenerators.Tuple4Generator<A,B,C,D> tuple(Generator<A> a, Generator<B> b, Generator<C> c, Generator<D> d) {
+        return new TupleGenerators.Tuple4Generator<>(a,b,c,d);
+    }
+
+    public static <A,B,C,D,E> TupleGenerators.Tuple5Generator<A,B,C,D,E> tuple(Generator<A> a, Generator<B> b, Generator<C> c, Generator<D> d, Generator<E> e) {
+        return new TupleGenerators.Tuple5Generator<>(a,b,c,d,e);
     }
 
     // ── Combinators ────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@ package com.aaroneline.hegeljava.generators;
 import com.aaroneline.hegeljava.Generator;
 import com.aaroneline.hegeljava.TestCase;
 import com.aaroneline.hegeljava.backend.DataSource;
+import com.aaroneline.hegeljava.tuples.Tuple;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayDeque;
@@ -21,12 +22,12 @@ class CompositeGeneratorDrawTest {
         RecordingDataSource ds = new RecordingDataSource("key", 7);
         TestCase tc = new TestCase(ds, false, ignored -> {});
 
-        List<Object> value = new TupleGenerator(List.of(
+        Tuple<String, Integer> value = new TupleGenerators.TupleGenerator<>(
                 new StringGenerator(),
-                new IntegerGenerator()))
+                new IntegerGenerator())
                 .draw(tc);
 
-        assertEquals(List.of("key", 7), value);
+        assertEquals(new Tuple<>("key", 7), value);
         assertEquals(List.of("string", "integer"), ds.generatedTypes());
         assertFalse(ds.generatedTypes().contains("tuple"));
     }

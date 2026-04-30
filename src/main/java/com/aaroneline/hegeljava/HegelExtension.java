@@ -57,7 +57,7 @@ public final class HegelExtension implements TestTemplateInvocationContextProvid
         HegelStream testStream = conn.newStream();
 
         // Queue fed by the driver thread; consumed by our Spliterator.
-        BlockingQueue<InvocationEvent> queue = new LinkedBlockingQueue<>();
+        BlockingQueue<Events.InvocationEvent> queue = new LinkedBlockingQueue<>();
         AtomicReference<Throwable> driverError = new AtomicReference<>();
 
         Thread driver = new Thread(() ->
@@ -66,28 +66,7 @@ public final class HegelExtension implements TestTemplateInvocationContextProvid
         driver.setDaemon(true);
         driver.start();
 
-        return StreamSupport.stream(
-                new Spliterators.AbstractSpliterator<>(Long.MAX_VALUE, Spliterator.ORDERED) {
-                    @Override
-                    public boolean tryAdvance(
-                            java.util.function.Consumer<? super TestTemplateInvocationContext> action) {
-                        InvocationEvent event;
-                        try {
-                            event = queue.take();
-                        } catch (InterruptedException e) {
-                            Thread.currentThread().interrupt();
-                            return false;
-                        }
-                        if (event instanceof DoneEvent) return false;
-                        if (event instanceof ErrorEvent ee) {
-                            throw new RuntimeException("Hegel driver error", ee.cause());
-                        }
-                        TestCaseEvent tc = (TestCaseEvent) event;
-                        action.accept(new HegelInvocationContext(tc.testCase()));
-                        return true;
-                    }
-                },
-                false /* not parallel */);
+        return StreamSupport.stream(new HegelInvocationStream(queue), false);
     }
 
     // ── Driver thread ──────────────────────────────────────────────────────────
@@ -98,7 +77,7 @@ public final class HegelExtension implements TestTemplateInvocationContextProvid
             HegelStream testStream,
             Settings settings,
             byte[] databaseKey,
-            BlockingQueue<InvocationEvent> queue,
+            BlockingQueue<Events.InvocationEvent> queue,
             AtomicReference<Throwable> driverError) {
         try {
             session.runTest(testStream.streamId, settings, databaseKey);
@@ -124,7 +103,7 @@ public final class HegelExtension implements TestTemplateInvocationContextProvid
                     // as the Rust client hardcodes false.  Final replays are handled
                     // in the separate loop below after test_done.
                     TestCase tc = new TestCase(ds, false, msg -> System.err.println(msg));
-                    queue.put(new TestCaseEvent(tc));
+                    queue.put(new Events.TestCaseEvent(tc));
 
                 } else if ("test_done".equals(eventType)) {
                     // Ack test_done
@@ -159,14 +138,14 @@ public final class HegelExtension implements TestTemplateInvocationContextProvid
                 ServerDataSource ds = new ServerDataSource(tcStream);
                 TestCase tc = new TestCase(ds, isLast /* isFinalRun */,
                         msg -> System.err.println(msg));
-                queue.put(new TestCaseEvent(tc));
+                queue.put(new Events.TestCaseEvent(tc));
             }
 
-            queue.put(DoneEvent.INSTANCE);
+            queue.put(new Events.DoneEvent());
 
         } catch (Throwable t) {
             try {
-                queue.put(new ErrorEvent(t));
+                queue.put(new Events.ErrorEvent(t));
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
             }
@@ -203,133 +182,4 @@ public final class HegelExtension implements TestTemplateInvocationContextProvid
         return key.getBytes(StandardCharsets.UTF_8);
     }
 
-    // ── Event types ────────────────────────────────────────────────────────────
-
-    private sealed interface InvocationEvent permits TestCaseEvent, DoneEvent, ErrorEvent {}
-
-    private record TestCaseEvent(TestCase testCase) implements InvocationEvent {}
-
-    private enum DoneEvent implements InvocationEvent {
-        INSTANCE
-    }
-
-    private record ErrorEvent(Throwable cause) implements InvocationEvent {}
-
-    // ── Per-invocation context ─────────────────────────────────────────────────
-
-    private static final class HegelInvocationContext implements TestTemplateInvocationContext {
-        private final TestCase testCase;
-
-        HegelInvocationContext(TestCase testCase) {
-            this.testCase = testCase;
-        }
-
-        @Override
-        public String getDisplayName(int invocationIndex) {
-            return testCase.isFinalRun() ? "Counterexample" : "Case #" + invocationIndex;
-        }
-
-        @Override
-        public List<Extension> getAdditionalExtensions() {
-            return List.of(
-                    new HegelParameterResolver(testCase),
-                    new HegelInvocationInterceptor(testCase));
-        }
-    }
-
-    // ── Parameter resolver ─────────────────────────────────────────────────────
-
-    private static final class HegelParameterResolver implements ParameterResolver {
-        private final TestCase testCase;
-
-        HegelParameterResolver(TestCase testCase) {
-            this.testCase = testCase;
-        }
-
-        @Override
-        public boolean supportsParameter(ParameterContext pc, ExtensionContext ec) {
-            return pc.getParameter().getType() == TestCase.class;
-        }
-
-        @Override
-        public Object resolveParameter(ParameterContext pc, ExtensionContext ec) {
-            return testCase;
-        }
-    }
-
-    // ── Invocation interceptor ─────────────────────────────────────────────────
-
-    private static final class HegelInvocationInterceptor implements InvocationInterceptor {
-        private final TestCase testCase;
-
-        HegelInvocationInterceptor(TestCase testCase) {
-            this.testCase = testCase;
-        }
-
-        @Override
-        public void interceptTestTemplateMethod(
-                Invocation<Void> invocation,
-                ReflectiveInvocationContext<Method> invocationContext,
-                ExtensionContext extensionContext) throws Throwable {
-
-            var ds = testCase.getDataSource();
-            try {
-                invocation.proceed();
-                if (!ds.testAborted()) {
-                    ds.markComplete("VALID", null);
-                }
-            } catch (AssumeFailedException e) {
-                if (!ds.testAborted()) {
-                    ds.markComplete("INVALID", null);
-                }
-                // Swallow: JUnit should not see this as a test failure.
-            } catch (StopTestException e) {
-                // Backend already aborted; do not call markComplete.
-                // Swallow: not a test failure.
-            } catch (Throwable t) {
-                if (!ds.testAborted()) {
-                    ds.markComplete("INTERESTING", failureOrigin(t));
-                }
-                if (testCase.isFinalRun()) {
-                    java.util.List<String> lines = testCase.getCounterexampleLines();
-                    if (!lines.isEmpty()) {
-                        StringBuilder msg = new StringBuilder("Falsifying example:\n");
-                        for (String line : lines) {
-                            msg.append("  ").append(line).append('\n');
-                        }
-                        AssertionError wrapper = new AssertionError(msg.toString().stripTrailing(), t);
-                        wrapper.setStackTrace(t.getStackTrace());
-                        throw wrapper;
-                    }
-                    throw t; // Final replay: surface as JUnit failure.
-                }
-                // Non-final run: swallow so JUnit doesn't mark it as failed.
-            }
-        }
-
-        private static String failureOrigin(Throwable t) {
-            StackTraceElement[] stack = t.getStackTrace();
-            if (stack.length > 0) {
-                StackTraceElement frame = firstUserFrame(stack);
-                return t.getClass().getName() + " at " +
-                        frame.getClassName() + "." + frame.getMethodName() +
-                        ":" + frame.getLineNumber();
-            }
-            return t.getClass().getName();
-        }
-
-        private static StackTraceElement firstUserFrame(StackTraceElement[] stack) {
-            for (StackTraceElement frame : stack) {
-                String cls = frame.getClassName();
-                if (!cls.startsWith("com.aaroneline.hegeljava.")
-                        && !cls.startsWith("org.junit.")
-                        && !cls.startsWith("org.opentest4j.")
-                        && !cls.startsWith("java.")
-                        && !cls.startsWith("jdk.")) {
-                    return frame;
-                }
-            }
-            return stack[0];
-        }
-    }
 }

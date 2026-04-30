@@ -1,4 +1,4 @@
 package com.aaroneline.hegeljava.tuples;
 
-public record Tuple<X,Y>(X a, Y b) { 
+public record Tuple<A,B>(A a, B b) {
 }
